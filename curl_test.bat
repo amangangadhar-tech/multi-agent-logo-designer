@@ -1,0 +1,1 @@
+curl.exe -sS -X POST "https://ai.api.nvidia.com/v1/genai/stabilityai/stable-diffusion-3-medium" -H "Authorization: Bearer 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" -H "Accept: application/json" -H "Content-Type: application/json" -d @payload.json

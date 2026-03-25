@@ -1,0 +1,52 @@
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Output and temp files
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# OS generated
+.DS_Store
+Thumbs.db
+
+# Local workspace files (exclude all except existing placeholders if any)
+logo-designer/workspace/assets/*
+logo-designer/workspace/*.json
+logo-designer/workspace/*.txt
+logo-designer/workspace/*.pdf
+!logo-designer/workspace/assets/.gitkeep
+!logo-designer/user_input.json
+
+# Test outputs
+Integration_Test_Report.md
+pipeline_log.txt
+build_log.txt
+out.txt
+payload.json
+test_api*.ps1
+test_api*.bat
+test_nvidia*.py

@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  logo-designer:
+    build: .
+    volumes:
+      - ./workspace:/app/workspace
+      - ./user_input.json:/app/user_input.json:ro
+    environment:
+      - NVIDIA_API_KEY=${NVIDIA_API_KEY}
+    env_file:
+      - .env
