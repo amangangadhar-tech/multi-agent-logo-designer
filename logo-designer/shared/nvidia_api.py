@@ -21,11 +21,7 @@ at top branding agencies. You think systematically, output precise JSON only, an
 never add markdown formatting, code fences, or preamble. Your outputs are
 deterministic and structured."""
 
-VISUAL_PERSONA = """You are an expert SVG logo designer and vector artist. You think in shapes, paths,
-and coordinates. You have deep mastery of SVG viewBox, path commands (M L C A Z),
-and text layout. You output clean, valid SVG markup that is visually distinctive
-and brand-appropriate. You never add markdown, code fences, or explanations —
-only the requested SVG or JSON output."""
+
 
 def call_llm(system_prompt: str, user_message: str, temperature: float = 0.7, max_tokens: int = 4096, retries: int = 5) -> str:
     payload = {
@@ -54,13 +50,16 @@ def call_llm(system_prompt: str, user_message: str, temperature: float = 0.7, ma
 
 def generate_image(prompt: str, output_path: str,
                    width: int = 1024, height: int = 1024,
-                   seed: int = 42, retries: int = 3) -> str:
+                   seed: int = 42,
+                   negative_prompt: str = "blurry, low quality, distorted, watermark, text, letters, words, logo",
+                   retries: int = 3) -> str:
     payload = {
         "prompt": prompt,
         "model": "flux",
         "size": f"{width}x{height}",
         "response_format": "b64_json",
-        "seed": seed
+        "seed": seed,
+        "negative_prompt": negative_prompt
     }
     headers = {
         "Authorization": f"Bearer {POLLINATIONS_API_KEY}",

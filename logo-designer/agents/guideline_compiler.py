@@ -47,13 +47,13 @@ def main():
         if "heading_font" not in typography or "body_font" not in typography:
             raise Exception("typography missing heading_font or body_font")
 
-        # Gate 4: workspace/assets/ — at least 3 .svg files exist
+        # Gate 4: workspace/assets/ — at least 3 logo .png files exist (Flux + Pillow output)
         assets_dir = os.path.join(workspace, "assets")
         if not os.path.exists(assets_dir):
             raise Exception("assets directory missing")
-        svg_files = [f for f in os.listdir(assets_dir) if f.endswith(".svg")]
+        svg_files = [f for f in os.listdir(assets_dir) if f.endswith(".png")]
         if len(svg_files) < 3:
-            raise Exception(f"only {len(svg_files)} .svg files found, need at least 3")
+            raise Exception(f"only {len(svg_files)} .png files found, need at least 3")
 
         # Gate 5: workspace/assets/cover_art.png OR mood_board.png exists
         if not (os.path.exists(os.path.join(assets_dir, "cover_art.png")) or os.path.exists(os.path.join(assets_dir, "mood_board.png"))):

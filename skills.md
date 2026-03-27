@@ -5,19 +5,13 @@ Autonomous brand identity system that accepts a company name and description, th
 
 ---
 
-## API Stack (All Free — NVIDIA NIM)
+## API Stack
 
 | Role | Model | API |
 |---|---|---|
-| **LLM 1** — Strategy, Colour, Typography, Compiler, Image-prompt agents | `meta/llama-3.1-405b-instruct` | NVIDIA NIM Chat Completions |
-| **LLM 2** — Logo SVG generation (visual-specialist persona) | `meta/llama-3.1-405b-instruct` | NVIDIA NIM Chat Completions (different system prompt) |
-| **Image Gen** — Cover art + mood board | `stabilityai/stable-diffusion-3-medium` | NVIDIA NIM Free Endpoint |
-
-> **Why stable-diffusion-3-medium?**
-> It is the only "Free Endpoint" model in the NVIDIA/HuggingFace image-gen catalogue.
-> All alternatives (FLUX.1-dev, FLUX.1-schnell, FLUX.1-Kontext-dev, SD-3.5-large) are marked
-> "Downloadable" — requiring local GPU, model weight files, and self-hosted inference.
-> SD3-medium is callable via a single HTTPS POST with zero setup beyond an API key.
+| **Llama (Analysis + Prompt Writing)** — brand strategy, colour, typography, ALL image prompt generation | `meta/llama-3.1-405b-instruct` | NVIDIA NIM Chat Completions |
+| **Flux (All Visual Creation)** — logo PNG, icon PNG, cover art, mood board | `flux` (Flux Schnell) | Pollinations.AI |
+| **Pillow (Variant Derivation)** — logo_white, logo_dark from primary | Python Pillow | Local (no API) |
 
 ---
 
@@ -141,28 +135,20 @@ def _gradient_fallback(hex1: str, hex2: str, w: int, h: int, path: str):
 
 ---
 
-## LLM 1 vs LLM 2 — Role Distinction
+## Single LLM Role — ANALYTICAL_PERSONA only
 
-Both use `meta/llama-3.1-405b-instruct`. The difference is the **system prompt persona**.
+Llama's job is ONLY to analyse and write. It never generates visual output.
+For every image (logo, icon, cover, mood board), Llama writes a structured
+Flux prompt as JSON — Flux then handles all actual image creation.
 
-### LLM 1 — Analytical Persona
+### ANALYTICAL_PERSONA
 ```
 You are a senior brand strategist and design consultant with 20 years of experience
 at top branding agencies. You think systematically, output precise JSON only, and
 never add markdown formatting, code fences, or preamble. Your outputs are
 deterministic and structured.
 ```
-Used by: brand_strategist, colour_architect, typography_director, image_generator (prompt-writing step), guideline_compiler
-
-### LLM 2 — Visual / SVG Persona
-```
-You are an expert SVG logo designer and vector artist. You think in shapes, paths,
-and coordinates. You have deep mastery of SVG viewBox, path commands (M L C A Z),
-and text layout. You output clean, valid SVG markup that is visually distinctive
-and brand-appropriate. You never add markdown, code fences, or explanations —
-only the requested SVG or JSON output.
-```
-Used by: logo_designer exclusively
+Used by: ALL agents (brand_strategist, logo_designer, colour_architect, typography_director, image_generator, guideline_compiler)
 
 ---
 
@@ -170,9 +156,9 @@ Used by: logo_designer exclusively
 
 | Agent | LLM Used | Image Gen? | Input | Output |
 |---|---|---|---|---|
-| `brand_strategist` | LLM 1 | ✗ | `user_input.json` | `brand_brief.json` |
-| `logo_designer` | LLM 1 (concept) + LLM 2 (SVG) | ✗ | `brand_brief.json` | `logo_*.svg`, `logo_metadata.json` |
-| `colour_architect` | LLM 1 | ✗ | `brand_brief.json` | `colour_palette.json` |
+| `brand_strategist` | Llama — ANALYTICAL_PERSONA | ✗ | `user_input.json` | `brand_brief.json` |
+| `logo_designer` | Llama — ANALYTICAL_PERSONA (prompt writing only) | ✅ Flux — primary (1200×600) + icon (512×512) | `brand_brief.json` | `logo_*.png`, `logo_metadata.json` |
+| `colour_architect` | Llama — ANALYTICAL_PERSONA | ✗ | `brand_brief.json` | `colour_palette.json` |
 | `typography_director` | LLM 1 | ✗ | `brand_brief.json` | `typography.json` |
 | `image_generator` | LLM 1 (prompt) + SD3-medium | ✅ | `brand_brief.json` + `colour_palette.json` | `cover_art.png`, `mood_board.png` |
 | `guideline_compiler` | LLM 1 | ✗ | all outputs | `guideline_pages.json` |
@@ -203,6 +189,10 @@ typography_director ──┐
         ↓
   pdf_renderer
 ```
+
+> ⚠️ logo_designer reads ONLY brand_brief.json. It does NOT read colour_palette.json.
+> colour_architect runs AFTER logo_designer completes. Any attempt to read
+> colour_palette.json inside logo_designer will cause a permanent deadlock.
 
 > **Why colour_architect is no longer parallel:**
 > `image_generator` reads `colour_palette.json` (primary + secondary hex) to write
@@ -245,28 +235,26 @@ from shared.nvidia_api import call_llm, ANALYTICAL_PERSONA
 
 ## logo_designer Agent Rules
 
-Uses **two-step LLM process**:
+**Three-phase Flux logo process:**
 
-**Step 1 (LLM 1)** — Elaborate the logo concept into precise spatial instructions:
-```python
-system = LLM1_PERSONA
-user   = f"Expand this logo concept into precise SVG layout instructions as JSON: {brand_brief['logo_concept']}"
-# Output JSON: icon_shape_description, spatial_layout, icon_to_text_ratio, recommended_colours
-```
+Phase 1 — Llama writes Flux prompts (ANALYTICAL_PERSONA, 1 API call):
+  Input:  brand_brief.json ONLY (colour_palette.json not yet available)
+  Output: JSON with 4 keys: primary_logo_prompt, icon_prompt,
+          primary_negative, icon_negative
+  Key constraint: use brand_brief['colour_direction'] text for colour guidance.
+  Do NOT attempt to read colour hex values — they don't exist yet.
 
-**Step 2 (LLM 2)** — Generate all 4 SVG files from the elaborated concept:
-```python
-system = LLM2_PERSONA
-user   = f"Generate 4 SVG logo variants as JSON with keys primary_svg, white_svg, dark_svg, icon_svg. Concept: {concept_json}"
-```
+Phase 2 — Flux generates primary logo + icon (2 Pollinations API calls):
+  logo_primary.png : 1200×600, with wordmark text, white background
+  icon_only.png    : 600×600 square, symbol only, no text, white background
+  Both calls MUST pass their respective negative_prompt from Phase 1 output.
 
-### SVG Rules
-- ViewBox: `0 0 400 120` (horizontal), `0 0 200 200` (stacked)
-- Icon LEFT of wordmark; icon height = wordmark cap-height × 1.4
-- Embed Google Font via `<style>@import url(...)</style>`
-- primary_svg: brand primary colour; white_svg: all `#FFFFFF`; dark_svg: all neutral_dark hex; icon_svg: primary colour only
-- Validate with `xml.etree.ElementTree.fromstring()` — retry once on parse fail; fallback to geometric lettermark
-- Include `<title>` for accessibility; all paths closed with `Z`
+Phase 3 — Pillow derives variants (0 API calls):
+  logo_white.png : hardcoded dark neutral bg + white logo content (greyscale mask)
+  logo_dark.png  : hardcoded light bg + hardcoded brand-neutral blue logo content
+  icon_only.png  : resized to 512×512 square with ImageOps.fit()
+  Note: Variant backgrounds use hardcoded neutrals (colour_palette not available).
+  The pdf_renderer applies real brand colours to page backgrounds separately.
 
 ---
 

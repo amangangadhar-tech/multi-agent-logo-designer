@@ -3,8 +3,8 @@
 A fully autonomous brand identity pipeline powered entirely by NVIDIA's free NIM APIs. It uses seven specialized agents to collaborate and produce a complete, print-ready 10-page brand guideline PDF—including logo designs, color systems, and typography—based on a simple company description input.
 
 ## Requirements
-- **NVIDIA NIM free account**: Get an API key from [build.nvidia.com](https://build.nvidia.com)
-- **Pollinations.AI account**: Optional but recommended for high-quality Flux image generation.
+- **NVIDIA NIM free account**: Get an API key from [build.nvidia.com](https://build.nvidia.com) (for LLM analysis)
+- **Pollinations.AI account**: Required for high-quality Flux image and logo generation.
 - **Docker**: For running the containerized pipeline
 
 ## Quick Start
@@ -59,11 +59,11 @@ To get the most efficient and high-quality results from the AI agents, follow th
 ┌─────────────────────────────────────────────────────┐
 │     AGENT 2 — logo_designer                         │
 │     API: LLM 1 (concept elaboration)                │
-│          LLM 2 (SVG visual persona)                 │
+│          Pollinations Flux (Logo/Icon PNG)          │
 │     In:  brand_brief.json                           │
-│     Out: logo_primary.svg, logo_white.svg,          │
-│          logo_dark.svg, icon_only.svg,              │
-│          logo_metadata.json                         │
+│     Out: logo_primary.png, logo_white.png,          │
+│          logo_dark.png, icon_only.png,              │
+│          logo_metadata.json (via Pillow)            │
 └───────────────────┬─────────────────────────────────┘
                     │
                     ▼
@@ -121,8 +121,8 @@ To get the most efficient and high-quality results from the AI agents, follow th
 |-----------|-------------|
 | `workspace/brand_brief.json` | Strategic brand brief including concepts and audience |
 | `workspace/logo_metadata.json` | Metadata related to the logo concept and dimensions |
-| `workspace/assets/logo_*.svg` | Rendered logo SVGs for all variants (primary, white, dark, icon) |
-| `workspace/assets/*.png` | Converted PNG image assets, plus SD3 cover art and mood board |
+| `workspace/assets/logo_*.png` | Rendered logo PNGs for all variants (primary, white, dark, icon) |
+| `workspace/assets/*.png` | Converted PNG image assets, plus Flux cover art and mood board |
 | `workspace/colour_palette.json` | The structured 7-color palette definition |
 | `workspace/typography.json` | Defined Google Fonts families, scales, and line heights |
 | `workspace/guideline_pages.json` | Master layout plan structuring the 10-page content |
@@ -131,7 +131,7 @@ To get the most efficient and high-quality results from the AI agents, follow th
 
 ## Free Tier API Limits Note
 
-The NVIDIA NIM platform offers a free tier covering LLM endpoints like `meta/llama-3.1-405b-instruct`. Image generation is now handled by Pollinations.AI using the **Flux.1 Pro** model for superior visual quality. Ensure both `NVIDIA_API_KEY` and `POLLINATIONS_API_KEY` are configured in your `.env`.
+The NVIDIA NIM platform offers a free tier covering LLM endpoints like `meta/llama-3.1-405b-instruct`. Visual generation (logos, icons, and brand imagery) is handled by Pollinations.AI using the **Flux.1 Pro** model for superior visual quality and prompt adherence. Ensure both `NVIDIA_API_KEY` and `POLLINATIONS_API_KEY` are configured in your `.env`.
 
 ## Troubleshooting
 

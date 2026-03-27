@@ -57,10 +57,39 @@ def svg_to_png(svg_path: str, output_png: str, width_px: int = 600):
         except Exception:
             pass
 
+def _create_placeholder_logo(output_path: str, company_name: str):
+    """
+    Fallback: creates a minimal coloured rectangle with company initials.
+    Called only if a logo PNG is missing entirely (e.g. Flux + gradient both failed).
+    """
+    is_icon = "icon" in os.path.basename(output_path)
+    width, height = (512, 512) if is_icon else (1200, 600)
+    bg_colour = (30, 58, 138)        # safe brand-neutral deep blue
+    img  = Image.new("RGB", (width, height), bg_colour)
+    draw = ImageDraw.Draw(img)
+    initials = (company_name[:2] if len(company_name) >= 2 else company_name).upper()
+    # Draw initials centred — no custom font needed, PIL default is fine for a fallback
+    draw.text(
+        (width // 2, height // 2),
+        initials,
+        fill=(255, 255, 255),
+        anchor="mm"
+    )
+    img.save(output_path, "PNG")
+    print(f"WARNING: placeholder logo created for {output_path}")
+
+def _logo_display_dims(logo_path: str, desired_width_mm: float):
+    """Returns (width_mm, height_mm) preserving the image's aspect ratio."""
+    from PIL import Image as PILImage
+    img = PILImage.open(logo_path)
+    logo_w, logo_h = img.size
+    aspect = logo_w / logo_h
+    return desired_width_mm, desired_width_mm / aspect
+
 def register_google_fonts(typography: dict):
     os.makedirs("workspace/assets/fonts", exist_ok=True)
     for font_type in ['heading_font', 'body_font', 'accent_font']:
-        if font_type not in typography:
+        if font_type not in typography or typography[font_type] is None:
             continue
             
         family = typography[font_type]['family']
@@ -238,23 +267,24 @@ def render_logo_variants(c, page, brand_brief, palette):
     c.setFont("Helvetica", 10)
     c.drawCentredString(PAGE_W/4, PAGE_H/2 + 20*mm, "On Dark Backgrounds")
     
-    light_hex = palette['neutral_dark']['hex']
-    c.setFillColor(hex_to_color(light_hex))
+    light_bg = (248, 248, 250)
+    c.setFillColor(colors.Color(light_bg[0]/255, light_bg[1]/255, light_bg[2]/255))
     c.rect(PAGE_W/2, PAGE_H/2, PAGE_W/2, PAGE_H/2, fill=1, stroke=0)
     
-    path_dark = "workspace/assets/logo_white.png"
+    path_dark = "workspace/assets/logo_dark.png"
     if os.path.exists(path_dark):
-        c.drawImage(path_dark, PAGE_W*0.75 - logo_w/2, PAGE_H*0.75 - 15*mm, width=logo_w, height=30*mm, preserveAspectRatio=True, anchor='c')
+        disp_w, disp_h = _logo_display_dims(path_dark, logo_w / mm)
+        c.drawImage(path_dark, PAGE_W*0.75 - logo_w/2, PAGE_H*0.75 - (disp_h*mm)/2, width=disp_w*mm, height=disp_h*mm, preserveAspectRatio=True, mask='auto')
         
     c.setFillColor(hex_to_color(dark_hex))
     c.drawCentredString(PAGE_W*0.75, PAGE_H/2 + 20*mm, "On Light Backgrounds")
     
     c.setFillColor(hex_to_color(palette['neutral_dark']['hex']))
     c.rect(0, 0, PAGE_W, PAGE_H/2, fill=1, stroke=0)
-    path_icon = "workspace/assets/logo_white.png"
+    path_icon = "workspace/assets/icon_only.png"
     if os.path.exists(path_icon):
         icon_w = 40 * mm
-        c.drawImage(path_icon, PAGE_W/2 - icon_w/2, PAGE_H/4, width=icon_w, height=icon_w, preserveAspectRatio=True, anchor='c')
+        c.drawImage(path_icon, PAGE_W/2 - icon_w/2, PAGE_H/4, width=icon_w, height=icon_w, preserveAspectRatio=True, mask='auto')
     
     c.drawCentredString(PAGE_W/2, PAGE_H/4 - 30*mm, "Favicon | App Icon | Stamp")
 
@@ -547,12 +577,17 @@ def main():
     os.makedirs('workspace/assets', exist_ok=True)
     register_google_fonts(data['typography'])
     
-    svgs = ['logo_primary', 'logo_white', 'logo_dark', 'icon_only']
-    for svg in svgs:
-        svg_path = f'workspace/assets/{svg}.svg'
-        png_path = f'workspace/assets/{svg}.png'
-        if os.path.exists(svg_path):
-            svg_to_png(svg_path, png_path, width_px=600)
+    # Logos are now PNG files generated directly by Flux + Pillow.
+    # svg_to_png() is no longer called for logos.
+    logo_files = [
+        "workspace/assets/logo_primary.png",
+        "workspace/assets/logo_white.png",
+        "workspace/assets/logo_dark.png",
+        "workspace/assets/icon_only.png"
+    ]
+    for lf in logo_files:
+        if not os.path.exists(lf) or os.path.getsize(lf) == 0:
+            _create_placeholder_logo(lf, data['brand_brief']['company_name'])
             
     c = canvas.Canvas('workspace/brand_guidelines.pdf', pagesize=A4)
     PAGE_RENDERERS = {
