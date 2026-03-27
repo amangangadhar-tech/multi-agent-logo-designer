@@ -65,14 +65,14 @@ Secondary colour hex: {colour_palette.get('secondary', dict()).get('hex', '')}""
     generate_image(
         prompts.get('cover_prompt', ''),
         cover_path,
-        width=1024, height=1024, steps=35, cfg_scale=7.5, seed=42
+        width=1024, height=1024, seed=42
     )
     
     mood_path = os.path.join(assets_dir, "mood_board.png")
     generate_image(
         prompts.get('moodboard_prompt', ''),
         mood_path,
-        width=1024, height=512, steps=30, cfg_scale=7.0, seed=99
+        width=1024, height=512, seed=99
     )
     
     write_log("image_generator — STATUS: DONE")

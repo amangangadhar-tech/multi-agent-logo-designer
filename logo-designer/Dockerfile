@@ -5,6 +5,8 @@ RUN apt-get update && apt-get install -y \
     libpangoft2-1.0-0 libpangocairo-1.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
+ENV PYTHONUNBUFFERED=1
+
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

@@ -18,6 +18,20 @@ docker-compose up
 
 Then: open `workspace/brand_guidelines.pdf`
 
+## Maximizing Output Quality
+
+To get the most efficient and high-quality results from the AI agents, follow these guidelines when providing inputs:
+
+- **Be Descriptive**: Instead of just "a coffee shop," try "a specialty coffee subscription service delivering single-origin beans with a minimalist 1950s Italian aesthetic."
+- **Define Your Audience**: Mention who your customers are (e.g., "young urban professionals aged 25-40") to help the `brand_strategist` tune the tone.
+- **Mention Personalities**: Use 3-5 traits like "Bold, Trustworthy, Playful, or Elegant" in your description.
+- **Style Preferences**: If you have a specific logo style in mind (Wordmark, Lettermark, Pictorial, etc.), mention it directly.
+
+> [!TIP]
+> The more detail you provide in the `company_description`, the better the AI agents can harmonize. Richer descriptions lead to more cohesive logos and branding guidelines.
+
+---
+
 ## Agent Pipeline Diagram
 
 ```text

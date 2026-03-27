@@ -7,17 +7,13 @@ from PIL import Image
 import numpy as np
 
 NVIDIA_API_KEY = os.environ.get("NVIDIA_API_KEY", "")
+POLLINATIONS_API_KEY = os.environ.get("POLLINATIONS_API_KEY", "")
 LLM_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
-IMG_URL = "https://ai.api.nvidia.com/v1/genai/stabilityai/stable-diffusion-3-medium"
+POLLINATIONS_IMG_URL = "https://gen.pollinations.ai/v1/images/generations"
 MODEL = "meta/llama-3.1-405b-instruct"
 HEADERS_LLM = {
     "Authorization": f"Bearer {NVIDIA_API_KEY}",
     "Content-Type": "application/json"
-}
-HEADERS_IMG = {
-    "Authorization": f"Bearer {NVIDIA_API_KEY}",
-    "Content-Type": "application/json",
-    "Accept": "application/json"
 }
 
 ANALYTICAL_PERSONA = """You are a senior brand strategist and design consultant with 20 years of experience
@@ -31,7 +27,7 @@ and text layout. You output clean, valid SVG markup that is visually distinctive
 and brand-appropriate. You never add markdown, code fences, or explanations —
 only the requested SVG or JSON output."""
 
-def call_llm(system_prompt: str, user_message: str, temperature: float = 0.7, max_tokens: int = 4096, retries: int = 3) -> str:
+def call_llm(system_prompt: str, user_message: str, temperature: float = 0.7, max_tokens: int = 4096, retries: int = 5) -> str:
     payload = {
         "model": MODEL,
         "messages": [
@@ -52,32 +48,39 @@ def call_llm(system_prompt: str, user_message: str, temperature: float = 0.7, ma
                 code = e.response.status_code
                 if code != 429 and code < 500:
                     raise
-            time.sleep(5 * (attempt + 1))
+            time.sleep(10 * (attempt + 1))
             continue
     raise RuntimeError(f"LLM call failed after {retries} retries")
 
-def generate_image(prompt: str, output_path: str, width: int = 1024, height: int = 1024, steps: int = 30, cfg_scale: float = 7.0, seed: int = 42, retries: int = 3) -> str:
+def generate_image(prompt: str, output_path: str,
+                   width: int = 1024, height: int = 1024,
+                   seed: int = 42, retries: int = 3) -> str:
     payload = {
         "prompt": prompt,
-        "negative_prompt": "text, letters, words, watermark, blurry, distorted, ugly, logo",
+        "model": "flux",
+        "size": f"{width}x{height}",
+        "response_format": "b64_json",
         "seed": seed
+    }
+    headers = {
+        "Authorization": f"Bearer {POLLINATIONS_API_KEY}",
+        "Content-Type": "application/json"
     }
     for attempt in range(retries):
         try:
-            resp = requests.post(IMG_URL, headers=HEADERS_IMG, json=payload, timeout=180)
+            resp = requests.post(POLLINATIONS_IMG_URL, headers=headers,
+                                 json=payload, timeout=120)
             resp.raise_for_status()
-            img_b64 = resp.json()["artifacts"][0]["base64"]
+            img_b64 = resp.json()["data"][0]["b64_json"]
             img = Image.open(BytesIO(base64.b64decode(img_b64)))
             img.save(output_path, "PNG")
             return output_path
-        except (requests.exceptions.HTTPError, requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        except requests.exceptions.HTTPError as e:
             if getattr(e, "response", None) is not None:
                 if e.response.status_code == 429:
-                    time.sleep(30 * (attempt + 1))
+                    time.sleep(15 * (attempt + 1))
                     continue
-                break
-            time.sleep(30 * (attempt + 1))
-            continue
+            break
         except Exception:
             break
     
