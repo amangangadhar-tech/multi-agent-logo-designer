@@ -4,6 +4,7 @@ A fully autonomous brand identity pipeline powered entirely by NVIDIA's free NIM
 
 ## Requirements
 - **NVIDIA NIM free account**: Get an API key from [build.nvidia.com](https://build.nvidia.com)
+- **Pollinations.AI account**: Optional but recommended for high-quality Flux image generation.
 - **Docker**: For running the containerized pipeline
 
 ## Quick Start
@@ -11,7 +12,10 @@ A fully autonomous brand identity pipeline powered entirely by NVIDIA's free NIM
 Run the following 3 commands to generate your brand guidelines:
 
 ```bash
-cp .env.example .env && echo "NVIDIA_API_KEY=nvapi-..." >> .env
+cp .env.example .env 
+# Add your keys to .env:
+# NVIDIA_API_KEY=nvapi-...
+# POLLINATIONS_API_KEY=...
 echo '{"company_name":"YourBrand","company_description":"..."}' > user_input.json
 docker-compose up
 ```
@@ -75,18 +79,17 @@ To get the most efficient and high-quality results from the AI agents, follow th
            ▼                               ▼
 ┌──────────────────────┐      ┌────────────────────────┐
 │  AGENT 4             │      │  AGENT 5               │
-│  typography_director │      │  image_generator        │
+│  typography_director │      │  image_generator       │
 │                      │      │                        │
 │  LLM 1               │      │  Step 1: LLM 1         │
-│                      │      │  writes SD3 prompts    │
-│  Out:                │      │  Step 2: SD3-medium    │
-│  typography.json     │      │  generates images      │
-│                      │      │                        │
-│  [PARALLEL with      │      │  Out:                  │
-│   image_generator]   │      │  cover_art.png         │
+│                      │      │  writes Prompts        │
+│  Out:                │      │  Step 2: Pollinations  │
+│  typography.json     │      │  Flux Pro generates    │
+│                      │      │  high-fidelity images  │
+│  [PARALLEL with      │      │                        │
+│   image_generator]   │      │  Out:                  │
+│                      │      │  cover_art.png         │
 │                      │      │  mood_board.png        │
-│                      │      │  [PARALLEL with        │
-│                      │      │   typography_director] │
 └──────────┬───────────┘      └────────────┬───────────┘
            │                               │
            └───────────────┬───────────────┘
@@ -128,7 +131,7 @@ To get the most efficient and high-quality results from the AI agents, follow th
 
 ## Free Tier API Limits Note
 
-The NVIDIA NIM platform offers a free tier covering endpoints used in this project like `meta/llama-3.1-405b-instruct` and `stabilityai/stable-diffusion-3-medium`. Please be mindful of usage rates, as rate ceilings and monthly token limits apply for free accounts.
+The NVIDIA NIM platform offers a free tier covering LLM endpoints like `meta/llama-3.1-405b-instruct`. Image generation is now handled by Pollinations.AI using the **Flux.1 Pro** model for superior visual quality. Ensure both `NVIDIA_API_KEY` and `POLLINATIONS_API_KEY` are configured in your `.env`.
 
 ## Troubleshooting
 
