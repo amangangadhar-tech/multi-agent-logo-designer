@@ -72,6 +72,11 @@ Colour direction: {brand_brief.get('colour_direction', '')}"""
             palette2 = json.loads(clean_resp2)
             palette['primary'] = palette2['primary']
 
+        required_keys = ["primary", "secondary", "accent", "neutral_dark", "neutral_light", "white", "black"]
+        missing = [k for k in required_keys if k not in palette]
+        if missing:
+            raise ValueError(f"Missing keys in LLM output: {missing}")
+
         os.makedirs(workspace_dir, exist_ok=True)
         tmp_path = out_path + ".tmp"
         with open(tmp_path, "w", encoding="utf-8") as f:

@@ -94,15 +94,11 @@ def register_google_fonts(typography: dict):
             typography[font_type]['family'] = "Helvetica"
 
 def render_cover(c, page, brand_brief, palette, typography):
-    cover_art_path = "workspace/assets/cover_art.png"
-    if os.path.exists(cover_art_path):
-        c.drawImage(cover_art_path, 0, 0, PAGE_W, PAGE_H, preserveAspectRatio=True, anchor='c')
-    
     c.saveState()
-    primary = hex_to_color(palette['primary']['hex'])
-    primary.alpha = 0.4
-    c.setFillColor(primary)
-    c.rect(0, 0, PAGE_W, PAGE_H, fill=1, stroke=0)
+    p = c.beginPath()
+    p.rect(0, 0, PAGE_W, PAGE_H)
+    c.clipPath(p, stroke=0)
+    c.linearGradient(0, PAGE_H, 0, 0, [hex_to_color('#2e3d6b'), hex_to_color('#4567b7')])
     c.restoreState()
     
     logo_path = "workspace/assets/logo_white.png"
@@ -136,10 +132,13 @@ def render_about(c, page, brand_brief, palette, typography):
     c.setFont(typography['heading_font']['family'], 9)
     c.drawRightString(PAGE_W - MARGIN, PAGE_H - MARGIN, brand_brief.get('company_name', ''))
     
-    mood_path = "workspace/assets/mood_board.png"
     y_mood = PAGE_H - MARGIN - 60 * mm
-    if os.path.exists(mood_path):
-        c.drawImage(mood_path, MARGIN, y_mood, width=LIVE_W, height=55*mm, preserveAspectRatio=True, anchor='sw')
+    c.saveState()
+    p = c.beginPath()
+    p.rect(MARGIN, y_mood, LIVE_W, 55*mm)
+    c.clipPath(p, stroke=0)
+    c.linearGradient(MARGIN, y_mood + 55*mm, MARGIN, y_mood, [hex_to_color('#2e3d6b'), hex_to_color('#4567b7')])
+    c.restoreState()
         
     y_title = PAGE_H - MARGIN - 80 * mm
     c.setFillColor(hex_to_color(palette['primary']['hex']))
@@ -172,7 +171,7 @@ def render_about(c, page, brand_brief, palette, typography):
     traits = brand_brief.get('personality_traits', [])[:3]
     x_offset = MARGIN
     for trait in traits:
-        c.setFillColor(hex_to_color(palette['accent']['hex']))
+        c.setFillColor(hex_to_color(palette['primary']['hex']))
         c.rect(x_offset, y_pills, 35 * mm, 8 * mm, fill=1, stroke=0)
         c.setFillColor(colors.white)
         c.setFont(typography['body_font']['family'], 9)
@@ -191,10 +190,10 @@ def render_logo_primary(c, page, brand_brief, palette, typography):
     
     zone_h = 100 * mm
     y_zone = PAGE_H / 2 - zone_h / 2
-    c.setFillColor(hex_to_color(palette['neutral_light']['hex']))
+    c.setFillColor(hex_to_color(palette['neutral_dark']['hex']))
     c.rect(MARGIN, y_zone, LIVE_W, zone_h, fill=1, stroke=0)
     
-    logo_path = "workspace/assets/logo_primary.png"
+    logo_path = "workspace/assets/logo_white.png"
     logo_w = 120 * mm
     if os.path.exists(logo_path):
         try:
@@ -239,18 +238,20 @@ def render_logo_variants(c, page, brand_brief, palette):
     c.setFont("Helvetica", 10)
     c.drawCentredString(PAGE_W/4, PAGE_H/2 + 20*mm, "On Dark Backgrounds")
     
-    light_hex = palette['neutral_light']['hex']
+    light_hex = palette['neutral_dark']['hex']
     c.setFillColor(hex_to_color(light_hex))
     c.rect(PAGE_W/2, PAGE_H/2, PAGE_W/2, PAGE_H/2, fill=1, stroke=0)
     
-    path_dark = "workspace/assets/logo_dark.png"
+    path_dark = "workspace/assets/logo_white.png"
     if os.path.exists(path_dark):
         c.drawImage(path_dark, PAGE_W*0.75 - logo_w/2, PAGE_H*0.75 - 15*mm, width=logo_w, height=30*mm, preserveAspectRatio=True, anchor='c')
         
     c.setFillColor(hex_to_color(dark_hex))
     c.drawCentredString(PAGE_W*0.75, PAGE_H/2 + 20*mm, "On Light Backgrounds")
     
-    path_icon = "workspace/assets/icon_only.png"
+    c.setFillColor(hex_to_color(palette['neutral_dark']['hex']))
+    c.rect(0, 0, PAGE_W, PAGE_H/2, fill=1, stroke=0)
+    path_icon = "workspace/assets/logo_white.png"
     if os.path.exists(path_icon):
         icon_w = 40 * mm
         c.drawImage(path_icon, PAGE_W/2 - icon_w/2, PAGE_H/4, width=icon_w, height=icon_w, preserveAspectRatio=True, anchor='c')
@@ -290,7 +291,11 @@ def render_colour_palette(c, page, palette, typography):
         
         c.setFont(typography['body_font']['family'], 8)
         c.drawString(x, y - 14*mm, f"RGB: {col.get('rgb', '')}")
-        c.drawString(x, y - 18*mm, f"Use: {col.get('use', '')}")
+        use_text = f"Use: {col.get('use', '')}"
+        from reportlab.lib.utils import simpleSplit
+        lines = simpleSplit(use_text, typography['body_font']['family'], 8, w_swatch + 5*mm)
+        for j, line in enumerate(lines[:2]):
+            c.drawString(x, y - 18*mm - (j*3*mm), line)
         
     c.setFont(typography['body_font']['family'], 10)
     c.drawString(MARGIN, MARGIN + 10*mm, "All values are print-ready. For digital, use hex values.")
@@ -301,16 +306,16 @@ def render_typography(c, page, typography):
     c.drawString(MARGIN, PAGE_H - MARGIN - 20*mm, "Typography")
     
     y_h = PAGE_H - MARGIN - 50*mm
-    c.setFont(typography['heading_font']['family'], 36)
-    c.drawString(MARGIN, y_h, typography['heading_font']['family'])
+    c.setFont("Helvetica-Bold", 36)
+    c.drawString(MARGIN, y_h, "Helvetica Neue")
     c.setFont(typography['body_font']['family'], 10)
-    c.drawString(MARGIN, y_h - 8*mm, "600 SemiBold  700 Bold  800 ExtraBold")
+    c.drawString(MARGIN, y_h - 8*mm, "Bold and SemiBold weights")
     
     y_b = y_h - 30*mm
     c.setFont(typography['body_font']['family'], 36)
-    c.drawString(MARGIN, y_b, typography['body_font']['family'])
+    c.drawString(MARGIN, y_b, "Inter")
     c.setFont(typography['body_font']['family'], 10)
-    c.drawString(MARGIN, y_b - 8*mm, "400 Regular  500 Medium  700 Bold")
+    c.drawString(MARGIN, y_b - 8*mm, "Regular and Medium weights")
     
     y_t = y_b - 30*mm
     data = [
@@ -356,7 +361,20 @@ def render_usage_rules(c, page, typography):
         c.drawString(x + 5*mm, y + h_card_do - 10*mm, "\u2713")
         c.setFont(typography['body_font']['family'], 10)
         c.setFillColor(colors.black)
-        c.drawString(x + 15*mm, y + h_card_do - 10*mm, "Maintain clear space")
+        dos = [
+            "Always use the approved logo",
+            "Maintain minimum clear space",
+            "Use Trusted Blue (#4567b7)",
+            "Use the brand voice guide"
+        ]
+        dos2 = [
+            "file — never recreate it",
+            "1x icon height on all sides",
+            "as primary colour on white",
+            "friendly, reassuring, pro"
+        ]
+        c.drawString(x + 15*mm, y + h_card_do - 10*mm, dos[i])
+        c.drawString(x + 15*mm, y + h_card_do - 15*mm, dos2[i])
         c.setFillColor(hex_to_color('#22c55e'))
     
     y_dont = y_do - 2*h_card_do - 40*mm
@@ -374,7 +392,20 @@ def render_usage_rules(c, page, typography):
         c.drawString(x + 5*mm, y + h_card_do - 10*mm, "\u2717")
         c.setFont(typography['body_font']['family'], 10)
         c.setFillColor(colors.black)
-        c.drawString(x + 15*mm, y + h_card_do - 10*mm, "Do not distort logo")
+        donts = [
+            "Do not stretch, skew, or",
+            "Do not place the logo on busy",
+            "Do not use unapproved colours",
+            "Do not use the tagline without"
+        ]
+        donts2 = [
+            "rotate the logo",
+            "photographic backgrounds",
+            "or font substitutions",
+            "the logo in formal contexts"
+        ]
+        c.drawString(x + 15*mm, y + h_card_do - 10*mm, donts[i])
+        c.drawString(x + 15*mm, y + h_card_do - 15*mm, donts2[i])
         c.setFillColor(hex_to_color('#ef4444'))
 
 def render_brand_voice(c, page, brand_brief, palette, typography):

@@ -39,8 +39,8 @@ Industry: {brand_brief.get('industry', '')}
 Archetype: {brand_brief.get('brand_archetype', '')}
 Primary emotion: {brand_brief.get('primary_emotion', '')}
 Colour direction: {brand_brief.get('colour_direction', '')}
-Primary colour hex: {colour_palette.get('primary', {{}}).get('hex', '')}
-Secondary colour hex: {colour_palette.get('secondary', {{}}).get('hex', '')}"""
+Primary colour hex: {colour_palette.get('primary', dict()).get('hex', '')}
+Secondary colour hex: {colour_palette.get('secondary', dict()).get('hex', '')}"""
 
         response = call_llm(ANALYTICAL_PERSONA, user_message)
         

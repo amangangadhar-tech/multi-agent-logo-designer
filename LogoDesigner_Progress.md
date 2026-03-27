@@ -19,3 +19,6 @@
 - [x] Step 17 — Build Docker image
 - [x] Step 18 — Run full pipeline (NovaMed test case)
 - [x] Step 19 — Verify PDF output
+- [x] Step 20 — Code quality audit
+- [x] Step 21 — Write README.md
+- [x] Step 22 — Final run with second brand + knowledge save

@@ -47,6 +47,11 @@ Industry: {brand_brief.get('industry', '')}"""
             
         typography = json.loads(clean_resp)
 
+        required_keys = ["heading_font", "body_font", "accent_font", "scale", "line_height", "letter_spacing"]
+        missing = [k for k in required_keys if k not in typography]
+        if missing:
+            raise ValueError(f"Missing keys in LLM output: {missing}")
+
         for font_key, default_family, default_url in [
             ("heading_font", "Poppins", "https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800"),
             ("body_font", "Inter", "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600")

@@ -110,8 +110,10 @@ Output ONLY valid JSON with the 4 keys. No markdown."""
         
         for key, svg_content in svg_data.items():
             out_path = os.path.join(assets_dir, file_mapping[key])
-            with open(out_path, "w", encoding="utf-8") as f:
+            tmp_path = out_path + ".tmp"
+            with open(tmp_path, "w", encoding="utf-8") as f:
                 f.write(svg_content)
+            os.replace(tmp_path, out_path)
                 
         metadata = {
             "spatial_layout": concept.get("spatial_layout", "horizontal"),
@@ -121,8 +123,11 @@ Output ONLY valid JSON with the 4 keys. No markdown."""
             },
             "safe_zone_px": 24
         }
-        with open(os.path.join(workspace_dir, "logo_metadata.json"), "w", encoding="utf-8") as f:
+        meta_path = os.path.join(workspace_dir, "logo_metadata.json")
+        meta_tmp = meta_path + ".tmp"
+        with open(meta_tmp, "w", encoding="utf-8") as f:
             json.dump(metadata, f, indent=2)
+        os.replace(meta_tmp, meta_path)
 
         with open(log_path, "a", encoding="utf-8") as f:
             f.write("logo_designer — STATUS: DONE\n")

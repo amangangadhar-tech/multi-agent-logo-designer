@@ -47,22 +47,19 @@ def call_llm(system_prompt: str, user_message: str, temperature: float = 0.7, ma
             resp = requests.post(LLM_URL, headers=HEADERS_LLM, json=payload, timeout=120)
             resp.raise_for_status()
             return resp.json()["choices"][0]["message"]["content"]
-        except requests.exceptions.HTTPError as e:
-            code = e.response.status_code
-            if code == 429 or code >= 500:
-                time.sleep(5 * (attempt + 1))
-                continue
-            raise
+        except (requests.exceptions.HTTPError, requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+            if getattr(e, "response", None) is not None:
+                code = e.response.status_code
+                if code != 429 and code < 500:
+                    raise
+            time.sleep(5 * (attempt + 1))
+            continue
     raise RuntimeError(f"LLM call failed after {retries} retries")
 
 def generate_image(prompt: str, output_path: str, width: int = 1024, height: int = 1024, steps: int = 30, cfg_scale: float = 7.0, seed: int = 42, retries: int = 3) -> str:
     payload = {
         "prompt": prompt,
         "negative_prompt": "text, letters, words, watermark, blurry, distorted, ugly, logo",
-        "width": width,
-        "height": height,
-        "num_inference_steps": steps,
-        "guidance_scale": cfg_scale,
         "seed": seed
     }
     for attempt in range(retries):
@@ -73,11 +70,14 @@ def generate_image(prompt: str, output_path: str, width: int = 1024, height: int
             img = Image.open(BytesIO(base64.b64decode(img_b64)))
             img.save(output_path, "PNG")
             return output_path
-        except requests.exceptions.HTTPError as e:
-            if e.response.status_code == 429:
-                time.sleep(30 * (attempt + 1))
-                continue
-            break
+        except (requests.exceptions.HTTPError, requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+            if getattr(e, "response", None) is not None:
+                if e.response.status_code == 429:
+                    time.sleep(30 * (attempt + 1))
+                    continue
+                break
+            time.sleep(30 * (attempt + 1))
+            continue
         except Exception:
             break
     
